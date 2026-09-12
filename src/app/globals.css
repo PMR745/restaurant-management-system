@@ -426,12 +426,20 @@
 
 /* 4 ── Dish frame. A shared warm grade is what makes a grid of mismatched
         stock photos look art-directed rather than scraped. */
-/* Note: no `position` here on purpose. This class is defined after the
-   Tailwind import, so a `position` declaration would beat the `absolute`
-   utility at equal specificity and silently collapse any full-bleed hero to
-   zero height. Every call site sets its own positioning. */
+/* Two notes, both load-bearing.
+
+   No `position` here on purpose: this class is defined after the Tailwind
+   import, so a `position` declaration would beat the `absolute` utility at
+   equal specificity and silently collapse any full-bleed hero to zero height.
+   Every call site sets its own positioning.
+
+   `isolation` IS required. The scrim below is `z-index: 2`, and a positioned
+   element with `z-index: auto` creates no stacking context — so without this
+   the scrim escapes into the parent and paints over whatever follows the
+   hero, dimming the top of the first card beneath it. */
 .dish-frame {
   overflow: hidden;
+  isolation: isolate;
   background: var(--color-surface-2);
 }
 .dish-frame img {

@@ -9,7 +9,37 @@ import { cn } from "@/lib/utils/cn";
 /* ── dish image ──────────────────────────────────────────────────────────── */
 
 /**
- * A remote photo that can never leave a hole in the page.
+ * Hosts the Next image optimizer is configured to fetch from — must match
+ * `images.remotePatterns` in next.config.ts.
+ *
+ * Anything outside this list is rendered as a plain <img> instead. That is
+ * deliberate: the menu manager invites an admin to paste "any https image
+ * URL", and `next/image` THROWS during render for an unconfigured hostname
+ * rather than failing softly. One pasted link from an unexpected host would
+ * otherwise take down the entire guest menu — which is exactly what happened
+ * the first time someone added a dish with an image from elsewhere.
+ *
+ * Widening remotePatterns to `**` would fix the crash too, but it turns the
+ * deployment into an open image proxy for the whole internet. Keeping the
+ * optimizer allowlist tight and degrading to an unoptimized tag is the
+ * narrower trade.
+ */
+const OPTIMIZED_HOSTS = new Set(["images.unsplash.com"]);
+
+function imageKind(src: string): "optimized" | "plain" | "none" {
+  if (!src) return "none";
+  try {
+    const url = new URL(src);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return "none";
+    return OPTIMIZED_HOSTS.has(url.hostname) ? "optimized" : "plain";
+  } catch {
+    return "none"; // relative path or nonsense — not something we can render
+  }
+}
+
+/**
+ * A remote photo that can never leave a hole in the page, and can never crash
+ * one either.
  *
  * Unsplash ids are pinned, but a pinned id can still be taken down, and a
  * missing hero on the customer menu would be far more damaging than a slightly
@@ -38,7 +68,17 @@ export function DishImage({
 }) {
   const [failed, setFailed] = React.useState(false);
 
-  if (failed || !src) {
+  // A changed src is a fresh chance to load — otherwise editing a dish's photo
+  // leaves the placeholder stuck until a remount.
+  const [lastSrc, setLastSrc] = React.useState(src);
+  if (src !== lastSrc) {
+    setLastSrc(src);
+    setFailed(false);
+  }
+
+  const kind = imageKind(src);
+
+  if (failed || kind === "none") {
     return (
       <div
         className={cn(
@@ -49,9 +89,27 @@ export function DishImage({
         role="img"
       >
         <span className="font-display text-3xl font-light text-gold-800">
-          {alt.trim().charAt(0).toUpperCase()}
+          {alt.trim().charAt(0).toUpperCase() || "◆"}
         </span>
       </div>
+    );
+  }
+
+  if (kind === "plain") {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={alt}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+        onError={() => setFailed(true)}
+        className={cn(
+          "object-cover",
+          fill ? "absolute inset-0 h-full w-full" : "h-auto w-full",
+          className,
+        )}
+      />
     );
   }
 

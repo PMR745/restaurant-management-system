@@ -119,45 +119,67 @@ export function CustomerShell({ children }: { children: React.ReactNode }) {
   const { tableCode, base } = useTableRoute();
   const table = useSession(tableCode);
   const pathname = usePathname();
-  const [scrolled, setScrolled] = React.useState(false);
+  const [scroll, setScroll] = React.useState({ y: 0, viewport: 0 });
 
   React.useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () =>
+      setScroll({ y: window.scrollY, viewport: window.innerHeight });
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
-  // The QR landing is a curtain-raiser — full bleed, no chrome at all.
   const isLanding = pathname === base;
   const isCart = pathname === `${base}/cart`;
   const isTracking = pathname.startsWith(`${base}/order/`);
 
+  const scrolled = scroll.y > 12;
+
+  /**
+   * The QR landing opens as a full-bleed curtain-raiser, so the header stays
+   * out of the way — but only until the guest scrolls into the menu. Past the
+   * hero it has to appear, because the category rail sticks at `top-14` and
+   * without a header that band is just a 56px window of menu rows sliding
+   * past under the status bar.
+   *
+   * The header is always mounted and only fades, so `main` keeps a constant
+   * `pt-14` and nothing reflows as it appears.
+   */
+  const pastHero =
+    scroll.viewport > 0 && scroll.y > scroll.viewport * 0.7;
+  const headerShown = !isLanding || pastHero;
+
   return (
     <div className="relative min-h-dvh">
-      {!isLanding ? (
-        <GlassPanel
-          className={cn(
-            "fixed inset-x-0 top-0 z-40 h-14 border-b transition-colors duration-[--duration-fast]",
-            scrolled ? "border-line-gold" : "border-transparent",
-          )}
-        >
-          <div className="mx-auto flex h-full max-w-[560px] items-center justify-between px-4">
-            <BackLink base={base} pathname={pathname} />
-            <Link
-              href={base}
-              className="font-display text-md font-light tracking-tight text-ink"
-            >
-              Noir <span className="text-gold-400">&amp;</span> Gold
-            </Link>
-            <span className="min-w-16 text-right font-mono text-2xs uppercase tracking-label text-ink-3">
-              {table?.code ?? tableCode}
-            </span>
-          </div>
-        </GlassPanel>
-      ) : null}
+      <GlassPanel
+        aria-hidden={!headerShown}
+        className={cn(
+          "fixed inset-x-0 top-0 z-40 h-14 border-b",
+          "transition-[opacity,border-color] duration-[--duration-base] ease-[--ease-standard]",
+          headerShown ? "opacity-100" : "pointer-events-none opacity-0",
+          headerShown && scrolled ? "border-line-gold" : "border-transparent",
+        )}
+      >
+        <div className="mx-auto flex h-full max-w-[560px] items-center justify-between px-4">
+          <BackLink base={base} pathname={pathname} />
+          <Link
+            href={base}
+            tabIndex={headerShown ? undefined : -1}
+            className="font-display text-md font-light tracking-tight text-ink"
+          >
+            Noir <span className="text-gold-400">&amp;</span> Gold
+          </Link>
+          <span className="min-w-16 text-right font-mono text-2xs uppercase tracking-label text-ink-3">
+            {table?.code ?? tableCode}
+          </span>
+        </div>
+      </GlassPanel>
 
-      <main className={cn(!isLanding && "pt-14")}>{children}</main>
+      <main className="pt-14">{children}</main>
 
       {!isCart && !isTracking ? <CartBar base={base} /> : null}
     </div>
