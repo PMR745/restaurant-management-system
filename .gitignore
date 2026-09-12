@@ -47,3 +47,7 @@ next-env.d.ts
 
 .vercel
 .env*
+# ...but .env.example documents every variable and is committed. This negation
+# has to come last: the Vercel CLI appends `.env*` to this file on `link`, and
+# a later pattern wins.
+!.env.example
