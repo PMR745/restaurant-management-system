@@ -119,7 +119,10 @@ function MenuContent() {
       </header>
 
       {/* ── category rail ──────────────────────────────────────────────── */}
-      <nav className="sticky top-14 z-30 border-b border-line bg-obsidian/80 backdrop-blur-2xl">
+      {/* Opaque enough to stand on its own: backdrop-blur is a progressive
+          enhancement, and a rail that lets dish names read through it looks
+          broken rather than glassy. */}
+      <nav className="sticky top-14 z-30 border-b border-line bg-obsidian/95 backdrop-blur-2xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(0))]:bg-obsidian">
         <div className="edge-fade-x no-scrollbar mx-auto flex max-w-[560px] snap-x gap-1 overflow-x-auto px-4 py-2.5">
           {categories.map((c) => {
             const active = activeCategory === c.slug;

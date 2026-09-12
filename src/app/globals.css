@@ -785,9 +785,17 @@ body:has(.kds-glare) .grain {
 
 /* The customer page transition: a filmic blur-in rather than a plain fade.
    Ops routes deliberately do not use this — staff navigate fast and would
-   resent paying 520ms for atmosphere. */
+   resent paying 520ms for atmosphere.
+
+   `backwards`, NOT `both`. With `both` the element keeps the final keyframe
+   applied forever, and that final keyframe contains `filter: blur(0)` — a
+   filter, even a no-op one, creates a containing block and disables
+   `backdrop-filter` on every descendant. That silently killed the glass on
+   the sticky category rail, so menu rows showed through it sharp instead of
+   blurred. The end state here is the element's natural state anyway, so
+   dropping it after the animation costs nothing. */
 .page-enter {
-  animation: rise-in var(--duration-page) var(--ease-luxe) both;
+  animation: rise-in var(--duration-page) var(--ease-luxe) backwards;
 }
 
 /* ============================================================================
