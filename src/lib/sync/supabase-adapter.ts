@@ -93,7 +93,7 @@ export class SupabaseAdapter implements SyncAdapter {
           this.inbox.push({
             entity: table,
             kind: payload.eventType === "INSERT" ? "insert" : "update",
-            record: rowToEntity<AnyEntity>(row),
+            record: rowToEntity<AnyEntity>(row, table),
           });
           this.scheduleFlush();
         },
@@ -134,7 +134,7 @@ export class SupabaseAdapter implements SyncAdapter {
           .select("*")
           .eq(entity === "restaurants" ? "id" : "restaurant_id", RESTAURANT_ID);
         if (error) throw new Error(`${entity}: ${error.message}`);
-        return [entity, (data ?? []).map((r) => rowToEntity(r))] as const;
+        return [entity, (data ?? []).map((r) => rowToEntity(r, entity))] as const;
       }),
     );
     return Object.fromEntries(results) as unknown as Snapshot;
@@ -152,7 +152,7 @@ export class SupabaseAdapter implements SyncAdapter {
 
     // FK-safe order matters here; parents must land before children.
     for (const entity of ENTITY_ORDER) {
-      const rows = (seed[entity] as AnyEntity[]).map(entityToRow);
+      const rows = (seed[entity] as AnyEntity[]).map((r) => entityToRow(r, entity));
       if (!rows.length) continue;
       const { error: upsertError } = await this.client
         .from(entity)
@@ -174,41 +174,80 @@ export class SupabaseAdapter implements SyncAdapter {
       byEntity.set(m.entity, list);
     }
 
+    const toRow = (m: Mutation) =>
+      entityToRow(
+        {
+          ...m.patch,
+          id: m.id,
+          restaurantId: RESTAURANT_ID,
+          updatedBy: m.clientId,
+          lastOpId: m.opId,
+        },
+        m.entity,
+      );
+
     for (const entity of ENTITY_ORDER) {
       const batch = byEntity.get(entity);
       if (!batch) continue;
 
-      // An update here is a partial upsert, which Postgres cannot express
-      // directly — so merge the patch over the current row first.
-      const rows: Record<string, unknown>[] = [];
-      for (const m of batch) {
-        rows.push(
-          entityToRow({
-            ...m.patch,
-            id: m.id,
-            restaurant_id: undefined,
-            restaurantId: RESTAURANT_ID,
-            updatedBy: m.clientId,
-            lastOpId: m.opId,
-          }),
-        );
+      // Inserts carry a complete record, so they can go in one upsert.
+      //
+      // Updates cannot. An upsert is INSERT ... ON CONFLICT DO UPDATE, and
+      // Postgres validates the INSERT arm first — so a partial patch such as
+      // {id, status, accepted_at} is rejected for violating NOT NULL on
+      // columns it never intended to touch (orders.type, orders.channel).
+      // A PATCH is what an update actually means, so issue one per row.
+      const inserts = batch.filter((m) => m.kind === "insert");
+      const updates = batch.filter((m) => m.kind !== "insert");
+
+      if (inserts.length) {
+        const { data, error } = await this.client
+          .from(entity)
+          .upsert(inserts.map(toRow), { onConflict: "id" })
+          .select();
+
+        if (error) {
+          for (const m of inserts) failed.push({ opId: m.opId, reason: error.message });
+        } else {
+          for (const row of data ?? []) {
+            applied.push({
+              entity,
+              kind: "insert",
+              record: rowToEntity<AnyEntity>(row, entity),
+            });
+          }
+        }
       }
 
-      const { data, error } = await this.client
-        .from(entity)
-        .upsert(rows, { onConflict: "id" })
-        .select();
+      // Distinct rows with distinct patches — nothing to batch, so run them
+      // together rather than in series.
+      const settled = await Promise.all(
+        updates.map(async (m) => {
+          const { data, error } = await this.client
+            .from(entity)
+            .update(toRow(m))
+            .eq("id", m.id)
+            .select();
+          return { m, data, error };
+        }),
+      );
 
-      if (error) {
-        for (const m of batch) failed.push({ opId: m.opId, reason: error.message });
-        continue;
-      }
-      for (const row of data ?? []) {
-        applied.push({
-          entity,
-          kind: "update",
-          record: rowToEntity<AnyEntity>(row),
-        });
+      for (const { m, data, error } of settled) {
+        if (error) {
+          failed.push({ opId: m.opId, reason: error.message });
+          continue;
+        }
+        if (!data?.length) {
+          failed.push({ opId: m.opId, reason: `No ${entity} row ${m.id}` });
+          continue;
+        }
+        for (const row of data) {
+          applied.push({
+            entity,
+            kind: "update",
+            record: rowToEntity<AnyEntity>(row, entity),
+          });
+        }
       }
     }
 
@@ -230,14 +269,19 @@ export class SupabaseAdapter implements SyncAdapter {
     for (const entity of [...ENTITY_ORDER].reverse()) {
       const strays = (current[entity] as AnyEntity[])
         .filter((r) => !seedIds.has(r.id) && !r.deletedAt)
-        .map((r) => ({ id: r.id, deleted_at: at, restaurant_id: RESTAURANT_ID }));
+        .map((r) =>
+          entityToRow(
+            { id: r.id, deletedAt: at, restaurantId: RESTAURANT_ID },
+            entity,
+          ),
+        );
       if (strays.length) {
         await this.client.from(entity).upsert(strays, { onConflict: "id" });
       }
     }
 
     for (const entity of ENTITY_ORDER) {
-      const rows = (seed[entity] as AnyEntity[]).map(entityToRow);
+      const rows = (seed[entity] as AnyEntity[]).map((r) => entityToRow(r, entity));
       if (rows.length) await this.client.from(entity).upsert(rows, { onConflict: "id" });
     }
   }

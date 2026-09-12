@@ -27,22 +27,44 @@ export function toCamel(key: string): string {
   );
 }
 
+/**
+ * `restaurants` is the tenant root: every other table has a `restaurant_id`
+ * foreign key, but the restaurant itself does not — its own `id` IS the tenant.
+ *
+ * The domain model does not make that distinction, because `Restaurant`
+ * extends `SyncBase` like everything else and so carries a `restaurantId`.
+ * That mismatch has to be absorbed at the boundary: strip the column on the
+ * way out, synthesise it on the way back in. Doing it here rather than in the
+ * adapter keeps the round trip lossless and in one place.
+ */
+const TENANT_ROOT = "restaurants";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function rowToEntity<T>(row: Record<string, any>): T {
+export function rowToEntity<T>(row: Record<string, any>, entity?: string): T {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const out: Record<string, any> = {};
   for (const [k, v] of Object.entries(row)) out[toCamel(k)] = v;
+  if (entity === TENANT_ROOT && out.restaurantId === undefined) {
+    out.restaurantId = out.id;
+  }
   return out as T;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function entityToRow(entity: Record<string, any>): Record<string, any> {
+export function entityToRow(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  entity: Record<string, any>,
+  table?: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Record<string, any> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const out: Record<string, any> = {};
   for (const [k, v] of Object.entries(entity)) {
     // The server owns these — sending them would fight the touch_row trigger.
     if (k === "updatedAt" || k === "rev") continue;
-    out[toSnake(k)] = v;
+    if (v === undefined) continue;
+    const column = toSnake(k);
+    if (table === TENANT_ROOT && column === "restaurant_id") continue;
+    out[column] = v;
   }
   return out;
 }
