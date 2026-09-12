@@ -1,0 +1,829 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   NOIR & GOLD — design tokens
+   Thesis: candlelight on obsidian. A warm near-black room, one champagne light
+   source from above, food photography as the only saturated colour.
+
+   Three rules:
+     1. Gold is LIGHT, not fill. Hairlines, speculars, glow. One solid-gold
+        element per screen, max.
+     2. Every neutral is warm-tinted (oklch hue 65-80). No #000, no #fff, no
+        blue-grey. Blue-grey is the tell of a framework default.
+     3. Serif talks, sans works. Never a sans H1.
+   ========================================================================= */
+
+@custom-variant hocus (&:hover, &:focus-visible);
+
+@theme {
+  /* ── surfaces: warm obsidian, 6 elevations ─────────────────────────────── */
+  --color-void: oklch(0.118 0.004 65);
+  --color-obsidian: oklch(0.15 0.005 65);
+  --color-surface-1: oklch(0.192 0.006 65);
+  --color-surface-2: oklch(0.236 0.007 65);
+  --color-surface-3: oklch(0.282 0.008 65);
+  --color-surface-4: oklch(0.33 0.009 65);
+
+  /* ── hairlines (alpha on white so they composite over photos too) ──────── */
+  --color-line: oklch(1 0 0 / 0.055);
+  --color-line-strong: oklch(1 0 0 / 0.1);
+  --color-line-gold: oklch(0.8 0.085 85 / 0.26);
+  --color-line-gold-hot: oklch(0.8 0.085 85 / 0.55);
+
+  /* ── champagne ramp ────────────────────────────────────────────────────── */
+  --color-gold-100: oklch(0.96 0.028 88);
+  --color-gold-200: oklch(0.91 0.045 88);
+  --color-gold-300: oklch(0.855 0.065 87);
+  --color-gold-400: oklch(0.8 0.082 86);
+  --color-gold-500: oklch(0.745 0.09 85);
+  --color-gold-600: oklch(0.655 0.086 83);
+  --color-gold-700: oklch(0.52 0.07 80);
+  --color-gold-800: oklch(0.35 0.05 78);
+  --color-gold-900: oklch(0.24 0.035 75);
+  /* text ON solid gold — 12.6:1. Never white, which is only 2.0:1. */
+  --color-gold-ink: oklch(0.175 0.02 70);
+
+  /* ── ink: warm alabaster, never #fff ───────────────────────────────────── */
+  --color-ink: oklch(0.945 0.006 80);
+  --color-ink-2: oklch(0.78 0.008 80);
+  --color-ink-3: oklch(0.615 0.008 80);
+  --color-ink-4: oklch(0.455 0.007 80);
+
+  /* ── status: one jewel ramp at uniform lightness 0.78 ──────────────────
+     Uniform L is what makes seven hues read as one family instead of as a
+     bag of alert colours. Tables and orders share the ramp so staff learn
+     one colour language across the floor map and the kitchen board.        */
+  --color-st-available: oklch(0.78 0.1 158); /* jade       */
+  --color-st-occupied: oklch(0.8 0.095 88); /* champagne  */
+  --color-st-ordering: oklch(0.78 0.11 55); /* apricot    */
+  --color-st-preparing: oklch(0.78 0.09 268); /* periwinkle */
+  --color-st-ready: oklch(0.78 0.1 300); /* orchid     */
+  --color-st-served: oklch(0.78 0.09 210); /* glacier    */
+  --color-st-cancelled: oklch(0.7 0.14 25); /* ember      */
+  --color-st-draft: oklch(0.78 0.04 255); /* pewter     */
+
+  /* ── ticket aging: a SEPARATE axis from status. Urgency may be loud. ───── */
+  --color-age-fresh: oklch(0.615 0.008 80);
+  --color-age-warn: oklch(0.8 0.11 70);
+  --color-age-late: oklch(0.72 0.15 40);
+  --color-age-critical: oklch(0.66 0.18 22);
+
+  /* ── feedback (deliberately distinct from status hues) ─────────────────── */
+  --color-success: oklch(0.78 0.1 158);
+  --color-warning: oklch(0.8 0.11 70);
+  --color-danger: oklch(0.7 0.15 25);
+  --color-info: oklch(0.78 0.06 240);
+
+  /* ── type ──────────────────────────────────────────────────────────────── */
+  --font-display: var(--font-cormorant), "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.5rem;
+  --text-md: 1.0625rem;
+  --text-md--line-height: 1.625rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 1.35;
+  --text-2xl: 1.875rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 2.375rem;
+  --text-3xl--line-height: 1.15;
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 1.08;
+  --text-5xl: 3.75rem;
+  --text-5xl--line-height: 1.02;
+  --text-6xl: 4.75rem;
+  --text-6xl--line-height: 0.98;
+
+  --tracking-luxe: 0.22em;
+  --tracking-label: 0.08em;
+  --tracking-tight: -0.015em;
+  --tracking-display: -0.025em;
+
+  /* ── radii: intentional, not all-8px ───────────────────────────────────── */
+  --radius-hair: 2px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* ── shadows: layered, warm-black ──────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow-sm:
+    0 1px 2px oklch(0 0 0 / 0.35), 0 2px 6px -1px oklch(0 0 0 / 0.35);
+  --shadow-md:
+    0 1px 2px oklch(0 0 0 / 0.3), 0 4px 10px -2px oklch(0 0 0 / 0.4),
+    0 12px 28px -8px oklch(0 0 0 / 0.45);
+  --shadow-lg:
+    0 2px 4px oklch(0 0 0 / 0.3), 0 10px 24px -6px oklch(0 0 0 / 0.45),
+    0 28px 60px -18px oklch(0 0 0 / 0.6);
+  --shadow-xl:
+    0 4px 8px oklch(0 0 0 / 0.35), 0 20px 48px -12px oklch(0 0 0 / 0.55),
+    0 56px 110px -32px oklch(0 0 0 / 0.7);
+  --shadow-gold:
+    0 0 0 1px oklch(0.8 0.085 85 / 0.3),
+    0 8px 28px -10px oklch(0.745 0.09 85 / 0.42),
+    0 0 60px -20px oklch(0.745 0.09 85 / 0.35);
+
+  /* ── motion ────────────────────────────────────────────────────────────── */
+  --ease-luxe: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-swift: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in-luxe: cubic-bezier(0.7, 0, 0.84, 0);
+
+  --duration-micro: 140ms;
+  --duration-fast: 220ms;
+  --duration-base: 320ms;
+  --duration-slow: 480ms;
+  --duration-page: 560ms;
+
+  /* ── breakpoints ───────────────────────────────────────────────────────── */
+  --breakpoint-xs: 25rem; /* 400px  small phones          */
+  --breakpoint-3xl: 120rem; /* 1920px kitchen TV            */
+  --breakpoint-4xl: 160rem; /* 2560px floor-map wall        */
+}
+
+/* Tokens that reference other tokens must be `inline` to resolve. */
+@theme inline {
+  --color-card: var(--color-surface-1);
+  --color-card-hover: var(--color-surface-2);
+}
+
+/* ============================================================================
+   BASE
+   ========================================================================= */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--color-obsidian);
+    color: var(--color-ink-2);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 300;
+    letter-spacing: var(--tracking-display);
+    color: var(--color-ink);
+  }
+
+  /* Cormorant ships old-style (text) figures by default, where 0 sits at
+     x-height and reads as a lowercase o — so "T06" renders as "To6" and
+     "T11" as "Tıı". Lovely in a paragraph, wrong for a table number, an
+     order number or a price. Force lining figures everywhere the display
+     face is used; the `tabular` utility layers on top where columns of
+     numbers need to align. */
+  .font-display {
+    font-feature-settings:
+      "liga" 1,
+      "dlig" 1,
+      "kern" 1;
+    font-variant-numeric: lining-nums;
+  }
+
+  /* Focus ring: carve a gap in the surface, then the gold ring, then a glow.
+     Never a browser default, never a white ring-offset. */
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--color-obsidian),
+      0 0 0 3.5px var(--color-gold-400),
+      0 0 22px -4px oklch(0.745 0.09 85 / 0.55);
+    border-radius: inherit;
+    transition: box-shadow var(--duration-micro) var(--ease-standard);
+  }
+
+  ::selection {
+    background: oklch(0.745 0.09 85 / 0.28);
+    color: var(--color-ink);
+  }
+
+  /* Scrollbars, so native chrome never breaks the aesthetic. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.455 0.007 80 / 0.4) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: oklch(0.455 0.007 80 / 0.4);
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--color-gold-700);
+  }
+
+  /* Far-viewing screens: the kitchen board is read at 2-3 metres. */
+  @media (min-width: 120rem) {
+    :root {
+      font-size: 17px;
+    }
+  }
+  @media (min-width: 160rem) {
+    :root {
+      font-size: 19px;
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    :root {
+      --color-line: oklch(1 0 0 / 0.16);
+      --color-ink-3: oklch(0.78 0.008 80);
+    }
+  }
+}
+
+/* ============================================================================
+   STATUS RECIPE
+   One `data-status` attribute drives tint / stroke / glow via color-mix, so
+   there are zero per-status conditionals anywhere in JSX.
+   ========================================================================= */
+
+@layer components {
+  [data-status] {
+    --st: var(--color-st-draft);
+    --st-tint: color-mix(in oklab, var(--st) 9%, transparent);
+    --st-tint-strong: color-mix(in oklab, var(--st) 16%, transparent);
+    --st-stroke: color-mix(in oklab, var(--st) 30%, transparent);
+    --st-glow: color-mix(in oklab, var(--st) 45%, transparent);
+  }
+  [data-status="available"] {
+    --st: var(--color-st-available);
+  }
+  [data-status="occupied"] {
+    --st: var(--color-st-occupied);
+  }
+  [data-status="ordering"],
+  [data-status="placed"] {
+    --st: var(--color-st-ordering);
+  }
+  [data-status="preparing"],
+  [data-status="accepted"] {
+    --st: var(--color-st-preparing);
+  }
+  [data-status="ready"] {
+    --st: var(--color-st-ready);
+  }
+  [data-status="served"] {
+    --st: var(--color-st-served);
+  }
+  [data-status="cancelled"] {
+    --st: var(--color-st-cancelled);
+  }
+  [data-status="draft"] {
+    --st: var(--color-st-draft);
+  }
+}
+
+/* ============================================================================
+   SIGNATURE EFFECTS
+   The five things that actually read as expensive.
+   ========================================================================= */
+
+/* 1 ── Gilded hairline. A gradient border, brighter at the top-left and fading
+        to nothing, so it reads as a light source above the card rather than a
+        stroke around it. Used sparingly — scarcity is what makes it luxurious. */
+@utility gilded {
+  position: relative;
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      145deg,
+      oklch(0.855 0.065 87 / 0.55) 0%,
+      oklch(0.745 0.09 85 / 0.18) 26%,
+      oklch(1 0 0 / 0.04) 52%,
+      oklch(0.745 0.09 85 / 0.22) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
+/* An inset top-edge specular — the 1px of light that sells a raised surface. */
+@utility specular {
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.07);
+}
+
+/* 2 ── Film grain. Kills the flat-digital feel instantly. */
+.grain {
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift 8s steps(6) infinite;
+  will-change: transform;
+}
+@keyframes grain-shift {
+  0% {
+    transform: translate(0, 0);
+  }
+  16% {
+    transform: translate(-2%, 1%);
+  }
+  33% {
+    transform: translate(1%, -2%);
+  }
+  50% {
+    transform: translate(-1%, 2%);
+  }
+  66% {
+    transform: translate(2%, 1%);
+  }
+  83% {
+    transform: translate(-2%, -1%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+/* 3 ── Ambient champagne glow + vignette: the light above the table. */
+.glow-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      70rem 40rem at 50% -14%,
+      oklch(0.745 0.09 85 / 0.13) 0%,
+      oklch(0.745 0.09 85 / 0.05) 34%,
+      transparent 68%
+    ),
+    radial-gradient(
+      45rem 45rem at 92% 8%,
+      oklch(0.78 0.06 40 / 0.07) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      60rem 60rem at 0% 100%,
+      oklch(0.7 0.05 300 / 0.05) 0%,
+      transparent 60%
+    );
+}
+
+.vignette::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 90% at 50% 45%,
+    transparent 42%,
+    oklch(0 0 0 / 0.55) 100%
+  );
+}
+
+/* 4 ── Dish frame. A shared warm grade is what makes a grid of mismatched
+        stock photos look art-directed rather than scraped. */
+/* Note: no `position` here on purpose. This class is defined after the
+   Tailwind import, so a `position` declaration would beat the `absolute`
+   utility at equal specificity and silently collapse any full-bleed hero to
+   zero height. Every call site sets its own positioning. */
+.dish-frame {
+  overflow: hidden;
+  background: var(--color-surface-2);
+}
+.dish-frame img {
+  filter: saturate(1.06) contrast(1.06) brightness(0.94);
+  transition:
+    transform 900ms var(--ease-luxe),
+    filter 400ms var(--ease-standard);
+  will-change: transform;
+}
+/* warm candlelight wash */
+.dish-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    oklch(0.745 0.09 85 / 0.06) 0%,
+    transparent 40%
+  );
+  mix-blend-mode: soft-light;
+}
+/* legibility scrim — two stops, not a flat 50% black */
+.dish-frame[data-scrim]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    oklch(0.118 0.004 65 / 0) 34%,
+    oklch(0.118 0.004 65 / 0.45) 68%,
+    oklch(0.118 0.004 65 / 0.92) 100%
+  );
+}
+
+/* Full-bleed heroes get a four-stop scrim that darkens the TOP as well.
+   Stock photography is exposed for daylight — a bright window or a blown-out
+   sky in the upper third fights the whole palette and makes the page read
+   light. Rather than hunt for photographs that happen to be dark, pull every
+   one of them into the room. */
+.dish-frame[data-scrim="hero"]::after {
+  background: linear-gradient(
+    180deg,
+    oklch(0.118 0.004 65 / 0.72) 0%,
+    oklch(0.118 0.004 65 / 0.55) 30%,
+    oklch(0.118 0.004 65 / 0.66) 65%,
+    oklch(0.118 0.004 65 / 0.97) 100%
+  );
+}
+.dish-frame[data-scrim="hero"] img {
+  filter: saturate(1.02) contrast(1.06) brightness(0.58);
+}
+.dish-frame:hover img,
+.dish-frame[data-active="true"] img {
+  transform: scale(1.065);
+  filter: saturate(1.14) contrast(1.08) brightness(1);
+}
+.dish-frame[data-kenburns] img {
+  animation: kenburns 22s var(--ease-standard) infinite alternate;
+}
+@keyframes kenburns {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.1) translate3d(-1.5%, -2%, 0);
+  }
+}
+
+/* 5 ── Sheen sweep (buttons) + champagne shimmer (skeletons). */
+.sheen {
+  position: relative;
+  overflow: hidden;
+}
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 32%,
+    oklch(1 0 0 / 0.3) 48%,
+    oklch(1 0 0 / 0.06) 56%,
+    transparent 70%
+  );
+  transform: translateX(-110%);
+  transition: transform 780ms var(--ease-luxe);
+  pointer-events: none;
+}
+.sheen:hover::after,
+.sheen:focus-visible::after {
+  transform: translateX(110%);
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface-2);
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(0.745 0.09 85 / 0.07) 45%,
+    oklch(0.855 0.065 87 / 0.12) 50%,
+    oklch(0.745 0.09 85 / 0.07) 55%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer 1.8s var(--ease-standard) infinite;
+}
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* ── supporting flourishes ─────────────────────────────────────────────── */
+
+@utility text-gilt {
+  background: linear-gradient(
+    168deg,
+    var(--color-gold-100) 0%,
+    var(--color-gold-400) 44%,
+    var(--color-gold-600) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* letterpress, for serif set over photography */
+@utility text-engrave {
+  text-shadow:
+    0 1px 0 oklch(0 0 0 / 0.55),
+    0 2px 12px oklch(0 0 0 / 0.45);
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* the printed-menu centre-diamond rule */
+.rule-diamond {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-gold-700);
+}
+.rule-diamond::before,
+.rule-diamond::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-line-gold),
+    transparent
+  );
+}
+
+/* horizontal rails: fade the edges instead of clipping them */
+.edge-fade-x {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 20px,
+    #000 calc(100% - 28px),
+    transparent
+  );
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* a live status dot: full-chroma core, soft halo */
+.st-dot {
+  background: var(--st);
+  box-shadow: 0 0 8px var(--st-glow);
+}
+@keyframes st-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+}
+.st-dot[data-live="true"] {
+  animation: st-pulse 2.4s var(--ease-standard) infinite;
+}
+
+/* a one-shot ring, emitted when something changes state */
+@keyframes st-ring {
+  from {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+/* the breathing border on a critically-aged kitchen ticket */
+@keyframes age-breathe {
+  0%,
+  100% {
+    border-color: color-mix(
+      in oklab,
+      var(--color-age-critical) 50%,
+      transparent
+    );
+  }
+  50% {
+    border-color: color-mix(
+      in oklab,
+      var(--color-age-critical) 18%,
+      transparent
+    );
+  }
+}
+.age-critical {
+  animation: age-breathe 2s var(--ease-standard) infinite;
+}
+
+/* ── glare mode ──────────────────────────────────────────────────────────
+   Real kitchens have harsh overhead light, and a pure-dark UI washes out
+   under it. Rather than abandon the palette, raise every surface one
+   elevation, brighten the text, and kill the grain. Same design, legible
+   at the pass.                                                              */
+.kds-glare {
+  --color-void: oklch(0.2 0.006 65);
+  --color-obsidian: oklch(0.24 0.007 65);
+  --color-surface-1: oklch(0.285 0.008 65);
+  --color-surface-2: oklch(0.33 0.009 65);
+  --color-surface-3: oklch(0.375 0.01 65);
+  --color-surface-4: oklch(0.42 0.011 65);
+  --color-line: oklch(1 0 0 / 0.12);
+  --color-line-strong: oklch(1 0 0 / 0.18);
+  --color-ink-2: oklch(0.9 0.006 80);
+  --color-ink-3: oklch(0.76 0.008 80);
+  --color-ink-4: oklch(0.62 0.007 80);
+}
+.kds-glare ~ .grain,
+body:has(.kds-glare) .grain {
+  opacity: 0.015;
+  animation: none;
+}
+
+/* ============================================================================
+   OVERLAY KEYFRAMES
+   Radix exposes data-state, which is the only way to animate an element that
+   is about to unmount without pulling every dialog into framer-motion.
+   Exits run ~40% faster than entrances — a slow dismissal feels broken.
+   ========================================================================= */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes slide-in-bottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes slide-out-bottom {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 8px)) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* The customer page transition: a filmic blur-in rather than a plain fade.
+   Ops routes deliberately do not use this — staff navigate fast and would
+   resent paying 520ms for atmosphere. */
+.page-enter {
+  animation: rise-in var(--duration-page) var(--ease-luxe) both;
+}
+
+/* ============================================================================
+   REDUCED MOTION
+   The blanket kill switch, plus deliberate exceptions: removing ALL feedback
+   from a status change is worse than a little motion, so colour transitions
+   and short opacity fades survive.
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .grain {
+    animation: none;
+  }
+  .dish-frame[data-kenburns] img,
+  .dish-frame img {
+    animation: none;
+    transition: none;
+  }
+  .sheen::after {
+    display: none;
+  }
+  .shimmer::after {
+    animation: none;
+    opacity: 0.5;
+    transform: none;
+  }
+
+  /* Exception: a status change must stay legible. Stripping ALL feedback from
+     a state transition is worse for comprehension than a short colour fade,
+     so these three properties keep their animation. Declared longhand — a
+     multi-value shorthand carrying !important does not parse cleanly. */
+  [data-status],
+  .st-bar {
+    transition-property: background-color, border-color, color !important;
+    transition-duration: 200ms !important;
+    transition-timing-function: linear !important;
+  }
+}
