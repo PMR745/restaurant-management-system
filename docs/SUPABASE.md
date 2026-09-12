@@ -58,6 +58,21 @@ baked in at build time, so a restart is not enough.
 
 ## 5. Seed and verify
 
+> **Two things the local adapter can never exercise**, both of which bit this
+> project the first time it met a real Postgres. Worth knowing if you extend
+> the adapter:
+>
+> - `restaurants` is the tenant root and has **no `restaurant_id` column**,
+>   though `Restaurant` extends `SyncBase` like every other entity and so
+>   carries a `restaurantId`. The codec strips it on write and synthesises it
+>   on read. Add a new entity and it needs no special handling; add a new
+>   tenant-root table and it does.
+> - **Updates must be a PATCH, not an upsert.** An upsert is
+>   `INSERT … ON CONFLICT DO UPDATE`, and Postgres validates the INSERT arm
+>   first — so a partial patch like `{id, status, accepted_at}` is rejected for
+>   violating NOT NULL on `orders.type`, a column it never meant to touch.
+>   Inserts batch into one upsert; updates issue a real `.update()` each.
+
 Open the app. The first client to load it seeds the demo restaurant
 automatically (twelve tables, the full menu, five orders mid-service), guarded
 by an idempotent upsert so concurrent loads are harmless.

@@ -73,15 +73,19 @@ config file.
 
 | Mode | When | Behaviour |
 |---|---|---|
-| **Local** (default) | No env vars set | Everything syncs instantly across tabs and windows of **one browser**. Zero configuration. A second device gets its own separate demo. |
+| **Local** | No env vars set | Everything syncs instantly across tabs and windows of **one browser**. Zero configuration. A second device gets its own separate demo. |
 | **Supabase** | `NEXT_PUBLIC_SUPABASE_*` set | Real cross-device sync. Scan the QR on a phone and the order appears on the laptop's kitchen screen. |
 
-Local mode is genuinely useful — it is how you develop, and it demos perfectly
-on one machine. It is not a fallback or a stub; it implements the same
-interface, including optimistic writes and conflict resolution.
+**The deployment runs in Supabase mode.** Open the guest menu on your phone and
+the kitchen board on a laptop — they share one live service. Locally you get
+whichever mode your `.env.local` selects; with no env file at all it falls back
+to local mode, which is how you develop offline.
 
-To switch on Supabase, see [docs/SUPABASE.md](docs/SUPABASE.md). It is a
-five-minute setup and needs no code change.
+Local mode is not a stub or a fallback — it implements the same interface,
+including optimistic writes and conflict resolution, and it demos perfectly on
+one machine.
+
+Setting up your own Supabase project: [docs/SUPABASE.md](docs/SUPABASE.md).
 
 ---
 
@@ -165,13 +169,20 @@ npm run build                    # production build
 
 npm run dev                      # then, in another terminal:
 node scripts/acceptance.mjs      # 43 checks, drives a real browser
+node scripts/cross-device.mjs    # 10 checks, needs Supabase mode
 ```
 
 `scripts/acceptance.mjs` walks the entire success-criteria flow in Chrome —
 guest places an order, kitchen advances it through all four states, floor map
 and guest timeline are asserted at each step, waiter serves it, and every ops
-screen is checked for render and console errors. It needs Chrome installed and
-the dev server running.
+screen is checked for render and console errors. Point it anywhere with
+`ACCEPT_BASE=https://…`; it needs Chrome installed.
+
+`scripts/cross-device.mjs` is the one that proves the backend. It drives two
+**isolated** browser contexts — separate storage, no shared tab bus — so it can
+only pass over a real websocket. It places an order on one "device", asserts it
+reaches the other **without a reload**, then advances it and asserts the status
+flows back. Local mode cannot pass it, by design.
 
 `scripts/shots.mjs` captures every screen, waiting for photographs to decode
 rather than for the network to go quiet, and reports any image that failed.
@@ -198,10 +209,12 @@ See [.env.example](.env.example) for every variable.
 
 ## Known limitations
 
-- **Local mode is per-browser.** A deployed link in local mode gives every
-  visitor a private demo; two people on a call will not see each other's
-  orders. This is correct and documented, and the connection pill says so on
-  screen — but a shared live demo needs Supabase mode.
+- **The deployment shares one database.** In Supabase mode every visitor sees
+  the same service, which is the point — but it also means anyone can move
+  anyone else's orders. `/admin` → *Reset demo* restores the seed in one click.
+- **Local mode is per-browser.** Run without env vars and every visitor gets a
+  private demo; two people on a call will not see each other's orders. The
+  connection pill says so on screen rather than leaving it to this file.
 - **Free Supabase projects pause after ~7 days idle.** The first request after
   a pause takes 10-30 seconds. Open the Supabase dashboard once before demoing.
 - **Dish photography is stock.** Pinned Unsplash ids, art-directed with a shared
